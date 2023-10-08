@@ -5,6 +5,8 @@ licenses(["notice"])  # BSD license
 
 exports_files(["LICENSE"])
 
+OPENCV_VERSION = "406"
+
 # The following build rule assumes that OpenCV is installed by
 # 'apt-get install libopencv-core-dev libopencv-highgui-dev \'
 # '                libopencv-calib3d-dev libopencv-features2d-dev \'
@@ -19,23 +21,26 @@ cc_library(
         #"include/arm-linux-gnueabihf/opencv4/opencv2/cvconfig.h",
         #"include/x86_64-linux-gnu/opencv4/opencv2/cvconfig.h",
         #"include/opencv4/opencv2/**/*.h*",
+        "include/opencv4/opencv2/**/*.h*",
     ]),
+    srcs = glob(["lib/libopencv_*.so.%s" % OPENCV_VERSION]),
     includes = [
         # For OpenCV 4.x
         #"include/aarch64-linux-gnu/opencv4/",
         #"include/arm-linux-gnueabihf/opencv4/",
         #"include/x86_64-linux-gnu/opencv4/",
         #"include/opencv4/",
+        "include/opencv4/",
     ],
     linkopts = [
-        "-l:libopencv_core.so",
-        "-l:libopencv_calib3d.so",
-        "-l:libopencv_features2d.so",
-        "-l:libopencv_highgui.so",
-        "-l:libopencv_imgcodecs.so",
-        "-l:libopencv_imgproc.so",
-        "-l:libopencv_video.so",
-        "-l:libopencv_videoio.so",
+        #"-l:libopencv_core.so",
+        #"-l:libopencv_calib3d.so",
+        #"-l:libopencv_features2d.so",
+        #"-l:libopencv_highgui.so",
+        #"-l:libopencv_imgcodecs.so",
+        #"-l:libopencv_imgproc.so",
+        #"-l:libopencv_video.so",
+        #"-l:libopencv_videoio.so",
     ],
     visibility = ["//visibility:public"],
 )
