@@ -62,9 +62,14 @@ cc_library(
 # (or similar nvidia/amd equivalent)
 cc_library(
     name = "demo_run_graph_main_gpu",
-    srcs = ["demo_run_graph_main_gpu.cc"],
+    srcs = [
+        "demo_run_graph_main_gpu.cc",
+        "udp_hand.h",
+    ],
     deps = [
         "//mediapipe/framework:calculator_framework",
+        "//mediapipe/framework/formats:classification_cc_proto",
+        "//mediapipe/framework/formats:landmark_cc_proto",
         "//mediapipe/framework/formats:image_frame",
         "//mediapipe/framework/formats:image_frame_opencv",
         "//mediapipe/framework/port:file_helpers",
