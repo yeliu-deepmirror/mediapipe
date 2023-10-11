@@ -50,6 +50,14 @@ ABSL_FLAG(std::string, output_video_path, "",
           "Full path of where to save result (.mp4 only). "
           "If not provided, show result in a window.");
 
+
+inline int64_t GetRealTime() {
+  struct timespec res;
+  clock_gettime(CLOCK_REALTIME, &res);
+  int64_t cur_ts = (res.tv_sec * 1000000000) + res.tv_nsec;
+  return cur_ts;
+}
+
 absl::Status RunMPPGraph() {
   std::string calculator_graph_config_contents;
   MP_RETURN_IF_ERROR(mediapipe::file::GetContents(
@@ -137,7 +145,7 @@ absl::Status RunMPPGraph() {
         ABSL_LOG(ERROR) << "message size not the same.";
         continue;
       }
-      hand_server.UdpPublishHand(packet_landmarks.Timestamp().Value(), landmarks, handness);
+      hand_server.UdpPublishHand(packet_landmarks.Timestamp().Value() * 1e3, landmarks, handness);
       ABSL_LOG(INFO) << packet_landmarks.Timestamp().Value() << " " << landmarks[0].landmark_size() << " " << handness.size();
     }
     ABSL_LOG(INFO) << "End thread for getting hand information.";
@@ -172,8 +180,7 @@ absl::Status RunMPPGraph() {
     camera_frame.copyTo(input_frame_mat);
 
     // Prepare and add graph input packet.
-    size_t frame_timestamp_us =
-        (double)cv::getTickCount() / (double)cv::getTickFrequency() * 1e6;
+    size_t frame_timestamp_us = GetRealTime() * 1e-3;
     MP_RETURN_IF_ERROR(
         gpu_helper.RunInGlContext([&input_frame, &frame_timestamp_us, &graph,
                                    &gpu_helper]() -> absl::Status {
