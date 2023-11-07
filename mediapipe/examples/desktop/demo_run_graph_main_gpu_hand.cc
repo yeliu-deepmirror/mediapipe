@@ -15,10 +15,12 @@
 // An example of sending OpenCV webcam frames into a MediaPipe graph.
 // This example requires a linux computer and a GPU with EGL support drivers.
 #include <cstdlib>
+#include <thread>
 
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
 #include "absl/log/absl_log.h"
+#include "mediapipe/examples/desktop/udp_hand.h"
 #include "mediapipe/framework/calculator_framework.h"
 #include "mediapipe/framework/formats/image_frame.h"
 #include "mediapipe/framework/formats/image_frame_opencv.h"
@@ -35,6 +37,8 @@
 
 constexpr char kInputStream[] = "input_video";
 constexpr char kOutputStream[] = "output_video";
+constexpr char kOutputLandmarkStream[] = "hand_landmarks";
+constexpr char kOutputHandnessStream[] = "handedness";
 constexpr char kWindowName[] = "MediaPipe";
 
 ABSL_FLAG(std::string, calculator_graph_config_file, "",
@@ -45,6 +49,14 @@ ABSL_FLAG(std::string, input_video_path, "",
 ABSL_FLAG(std::string, output_video_path, "",
           "Full path of where to save result (.mp4 only). "
           "If not provided, show result in a window.");
+
+
+inline int64_t GetRealTime() {
+  struct timespec res;
+  clock_gettime(CLOCK_REALTIME, &res);
+  int64_t cur_ts = (res.tv_sec * 1000000000) + res.tv_nsec;
+  return cur_ts;
+}
 
 absl::Status RunMPPGraph() {
   std::string calculator_graph_config_contents;
@@ -91,10 +103,57 @@ absl::Status RunMPPGraph() {
   ABSL_LOG(INFO) << "Start running the calculator graph.";
   MP_ASSIGN_OR_RETURN(mediapipe::OutputStreamPoller poller,
                       graph.AddOutputStreamPoller(kOutputStream));
+  if (false) {
+    auto landmarks_callback = [&](const mediapipe::Packet& packet) {
+      const auto& landmarks = packet.Get<std::vector<mediapipe::NormalizedLandmarkList>>();
+      ABSL_LOG(INFO) << "get landmarks " << landmarks.size();
+      return absl::OkStatus();
+    };
+    MP_RETURN_IF_ERROR(graph.ObserveOutputStream(kOutputLandmarkStream, landmarks_callback));
+    auto handness_callback = [&](const mediapipe::Packet& packet) {
+      const auto& handness = packet.Get<std::vector<mediapipe::ClassificationList>>();
+      ABSL_LOG(INFO) << "get handness " << handness.size();
+      return absl::OkStatus();
+    };
+    MP_RETURN_IF_ERROR(graph.ObserveOutputStream(kOutputHandnessStream, handness_callback));
+  }
+  MP_ASSIGN_OR_RETURN(mediapipe::OutputStreamPoller poller_landmarks,
+                      graph.AddOutputStreamPoller(kOutputLandmarkStream));
+  MP_ASSIGN_OR_RETURN(mediapipe::OutputStreamPoller poller_handness,
+                      graph.AddOutputStreamPoller(kOutputHandnessStream));
   MP_RETURN_IF_ERROR(graph.StartRun({}));
 
-  ABSL_LOG(INFO) << "Start grabbing and processing frames.";
   bool grab_frames = true;
+  dm::UdpHandServer hand_server("0.0.0.0", 34567);
+  auto grab_hand_fcn = [&]() {
+    ABSL_LOG(INFO) << "Start thread for getting hand information.";
+    while (grab_frames) {
+      // Get the graph result packet, or stop if that fails.
+      mediapipe::Packet packet_landmarks;
+      if (!poller_landmarks.Next(&packet_landmarks)) break;
+      mediapipe::Packet packet_handness;
+      if (!poller_handness.Next(&packet_handness)) break;
+
+      if (packet_landmarks.Timestamp() != packet_handness.Timestamp()) {
+        ABSL_LOG(ERROR) << "message timestamp not the same.";
+        continue;
+      }
+
+      const auto& landmarks = packet_landmarks.Get<std::vector<mediapipe::NormalizedLandmarkList>>();
+      const auto& handness = packet_handness.Get<std::vector<mediapipe::ClassificationList>>();
+      if (landmarks.size() != handness.size()) {
+        ABSL_LOG(ERROR) << "message size not the same.";
+        continue;
+      }
+      hand_server.UdpPublishHand(packet_landmarks.Timestamp().Value() * 1e3, landmarks, handness);
+      ABSL_LOG(INFO) << packet_landmarks.Timestamp().Value() << " " << landmarks[0].landmark_size() << " " << handness.size();
+    }
+    ABSL_LOG(INFO) << "End thread for getting hand information.";
+  };
+  std::thread thread_grab_hand(grab_hand_fcn);
+  thread_grab_hand.detach();
+
+  ABSL_LOG(INFO) << "Start grabbing and processing frames.";
   while (grab_frames) {
     // Capture opencv camera or video frame.
     cv::Mat camera_frame_raw;
@@ -121,8 +180,7 @@ absl::Status RunMPPGraph() {
     camera_frame.copyTo(input_frame_mat);
 
     // Prepare and add graph input packet.
-    size_t frame_timestamp_us =
-        (double)cv::getTickCount() / (double)cv::getTickFrequency() * 1e6;
+    size_t frame_timestamp_us = GetRealTime() * 1e-3;
     MP_RETURN_IF_ERROR(
         gpu_helper.RunInGlContext([&input_frame, &frame_timestamp_us, &graph,
                                    &gpu_helper]() -> absl::Status {
