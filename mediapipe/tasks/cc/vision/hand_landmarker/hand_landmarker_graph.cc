@@ -125,6 +125,11 @@ absl::Status SetSubTaskBaseOptions(const ModelAssetBundleResources& resources,
       ->CopyFrom(options->base_options().acceleration());
   hand_landmarks_detector_graph_options->mutable_base_options()
       ->set_use_stream_mode(options->base_options().use_stream_mode());
+
+  hand_detector_graph_options->mutable_base_options()->set_gpu_origin(
+      options->base_options().gpu_origin());
+  hand_landmarks_detector_graph_options->mutable_base_options()->set_gpu_origin(
+      options->base_options().gpu_origin());
   return absl::OkStatus();
 }
 }  // namespace
@@ -249,18 +254,8 @@ class HandLandmarkerGraph : public core::ModelTaskGraph {
         graph[Output<std::vector<Detection>>(kPalmDetectionsTag)];
     hand_landmarker_outputs.image >> graph[Output<Image>(kImageTag)];
 
-    // TODO remove when support is fixed.
-    // As mediapipe GraphBuilder currently doesn't support configuring
-    // InputStreamInfo, modifying the CalculatorGraphConfig proto directly.
     CalculatorGraphConfig config = graph.GetConfig();
-    for (int i = 0; i < config.node_size(); ++i) {
-      if (config.node(i).calculator() == kPreviousLoopbackCalculatorName) {
-        auto* info = config.mutable_node(i)->add_input_stream_info();
-        info->set_tag_index("LOOP");
-        info->set_back_edge(true);
-        break;
-      }
-    }
+    core::FixGraphBackEdges(config);
     return config;
   }
 

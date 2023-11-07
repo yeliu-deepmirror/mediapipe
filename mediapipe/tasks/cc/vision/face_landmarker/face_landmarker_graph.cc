@@ -134,6 +134,9 @@ absl::Status SetSubTaskBaseOptions(const ModelAssetBundleResources& resources,
       ->CopyFrom(options->base_options().acceleration());
   face_detector_graph_options->mutable_base_options()->set_use_stream_mode(
       options->base_options().use_stream_mode());
+  face_detector_graph_options->mutable_base_options()->set_gpu_origin(
+      options->base_options().gpu_origin());
+
   auto* face_landmarks_detector_graph_options =
       options->mutable_face_landmarks_detector_graph_options();
   if (!face_landmarks_detector_graph_options->base_options()
@@ -151,6 +154,8 @@ absl::Status SetSubTaskBaseOptions(const ModelAssetBundleResources& resources,
       ->CopyFrom(options->base_options().acceleration());
   face_landmarks_detector_graph_options->mutable_base_options()
       ->set_use_stream_mode(options->base_options().use_stream_mode());
+  face_landmarks_detector_graph_options->mutable_base_options()->set_gpu_origin(
+      options->base_options().gpu_origin());
 
   absl::StatusOr<absl::string_view> face_blendshape_model =
       resources.GetFile(kFaceBlendshapeTFLiteName);
@@ -388,18 +393,8 @@ class FaceLandmarkerGraph : public core::ModelTaskGraph {
           graph[Output<std::vector<FaceGeometry>>(kFaceGeometryTag)];
     }
 
-    // TODO remove when support is fixed.
-    // As mediapipe GraphBuilder currently doesn't support configuring
-    // InputStreamInfo, modifying the CalculatorGraphConfig proto directly.
     CalculatorGraphConfig config = graph.GetConfig();
-    for (int i = 0; i < config.node_size(); ++i) {
-      if (config.node(i).calculator() == "PreviousLoopbackCalculator") {
-        auto* info = config.mutable_node(i)->add_input_stream_info();
-        info->set_tag_index(kLoopTag);
-        info->set_back_edge(true);
-        break;
-      }
-    }
+    core::FixGraphBackEdges(config);
     return config;
   }
 

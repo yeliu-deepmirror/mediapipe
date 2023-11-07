@@ -48,6 +48,7 @@ mediapipe_files(srcs = [
     "face_landmark.tflite",
     "face_landmarker.task",
     "face_landmarker_v2.task",
+    "face_stylizer_color_ink.task",
     "fist.jpg",
     "fist.png",
     "gesture_recognizer.task",
@@ -165,10 +166,6 @@ filegroup(
         "thumb_up.jpg",
         "victory.jpg",
     ],
-    visibility = [
-        "//mediapipe/python:__subpackages__",
-        "//mediapipe/tasks:internal",
-    ],
 )
 
 # TODO Create individual filegroup for models required for each Tasks.
@@ -187,6 +184,7 @@ filegroup(
         "face_detection_short_range.tflite",
         "face_landmarker.task",
         "face_landmarker_v2.task",
+        "face_stylizer_color_ink.task",
         "hair_segmentation.tflite",
         "hand_landmark_full.tflite",
         "hand_landmark_lite.tflite",
