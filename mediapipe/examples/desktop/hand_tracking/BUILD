@@ -48,7 +48,7 @@ cc_binary(
         "//mediapipe/modules/palm_detection:palm_detection_full.tflite",
     ],
     deps = [
-        "//mediapipe/examples/desktop:demo_run_graph_main_gpu",
+        "//mediapipe/examples/desktop:demo_run_graph_main_gpu_hand",
         "//mediapipe/graphs/hand_tracking:mobile_calculators",
     ],
 )
