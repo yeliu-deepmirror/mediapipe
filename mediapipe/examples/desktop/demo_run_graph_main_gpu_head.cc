@@ -213,10 +213,10 @@ absl::Status RunMPPGraph() {
       cv::cvtColor(output_frame_mat, output_frame_mat, cv::COLOR_RGB2BGR);
     if (save_video) {
       if (!writer.isOpened()) {
-        ABSL_LOG(INFO) << "Prepare video writer.";
+        ABSL_LOG(INFO) << "Prepare video writer : " << absl::GetFlag(FLAGS_output_video_path);
         writer.open(absl::GetFlag(FLAGS_output_video_path),
                     mediapipe::fourcc('a', 'v', 'c', '1'),  // .mp4
-                    capture.get(cv::CAP_PROP_FPS), output_frame_mat.size());
+                    30, output_frame_mat.size());
         RET_CHECK(writer.isOpened());
       }
       writer.write(output_frame_mat);
