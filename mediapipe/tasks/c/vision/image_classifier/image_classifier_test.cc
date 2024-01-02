@@ -142,7 +142,7 @@ TEST(ImageClassifierTest, VideoModeTest) {
 // timestamp is greater than the previous one.
 struct LiveStreamModeCallback {
   static int64_t last_timestamp;
-  static void Fn(ImageClassifierResult* classifier_result, const MpImage image,
+  static void Fn(ImageClassifierResult* classifier_result, const MpImage& image,
                  int64_t timestamp, char* error_msg) {
     ASSERT_NE(classifier_result, nullptr);
     ASSERT_EQ(error_msg, nullptr);

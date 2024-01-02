@@ -30,12 +30,12 @@
 #include "mediapipe/framework/port.h"
 #include "mediapipe/framework/port/ret_check.h"
 #include "mediapipe/framework/port/status_macros.h"
-#include "mediapipe/gpu/gpu_buffer_format.h"
 #include "mediapipe/gpu/gpu_origin.pb.h"
 
 #if !MEDIAPIPE_DISABLE_GPU
 #include "mediapipe/gpu/gl_calculator_helper.h"
 #include "mediapipe/gpu/gl_simple_shaders.h"
+#include "mediapipe/gpu/gpu_buffer_format.h"
 #include "mediapipe/gpu/shader_util.h"
 #endif  // !MEDIAPIPE_DISABLE_GPU
 
@@ -141,9 +141,13 @@ class TensorsToSegmentationCalculator : public CalculatorBase {
     return options_.gpu_origin() != mediapipe::GpuOrigin_Mode_TOP_LEFT;
   }
   absl::Status InitConverterIfNecessary() {
+#if !MEDIAPIPE_DISABLE_OPENCV
     if (!cpu_converter_) {
       MP_ASSIGN_OR_RETURN(cpu_converter_, CreateOpenCvConverter(options_));
     }
+#else
+    RET_CHECK_FAIL() << "OpenCV processing disabled.";
+#endif  // !MEDIAPIPE_DISABLE_OPENCV
     return absl::OkStatus();
   }
 

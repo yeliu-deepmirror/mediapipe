@@ -1,5 +1,3 @@
-/** @fileoverview Utility functions used in the vision demos. */
-
 /**
  * Copyright 2023 The MediaPipe Authors.
  *
@@ -16,16 +14,15 @@
  * limitations under the License.
  */
 
-/** Helper function to draw a confidence mask */
-export function drawConfidenceMask(
-    ctx: CanvasRenderingContext2D, image: Float32Array, width: number,
-    height: number): void {
-  const uint8Array = new Uint8ClampedArray(width * height * 4);
-  for (let i = 0; i < image.length; i++) {
-    uint8Array[4 * i] = 128;
-    uint8Array[4 * i + 1] = 0;
-    uint8Array[4 * i + 2] = 0;
-    uint8Array[4 * i + 3] = image[i] * 255;
-  }
-  ctx.putImageData(new ImageData(uint8Array, width, height), 0, 0);
-}
+import {convertToConnections} from '../../../../tasks/web/vision/core/types';
+
+/**
+ * An array containing the pairs of pose landmark indices to be rendered with
+ * connections.
+ */
+export const POSE_CONNECTIONS = convertToConnections(
+    [0, 1], [1, 2], [2, 3], [3, 7], [0, 4], [4, 5], [5, 6], [6, 8], [9, 10],
+    [11, 12], [11, 13], [13, 15], [15, 17], [15, 19], [15, 21], [17, 19],
+    [12, 14], [14, 16], [16, 18], [16, 20], [16, 22], [18, 20], [11, 23],
+    [12, 24], [23, 24], [23, 25], [24, 26], [25, 27], [26, 28], [27, 29],
+    [28, 30], [29, 31], [30, 32], [27, 31], [28, 32]);

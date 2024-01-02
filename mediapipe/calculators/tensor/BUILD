@@ -657,6 +657,7 @@ cc_library(
     }),
     deps = [
         ":tensor_converter_calculator_cc_proto",
+        ":tensor_converter_cpu",
         "//mediapipe/framework:calculator_framework",
         "//mediapipe/framework:port",
         "//mediapipe/framework/formats:image_frame",
@@ -665,6 +666,7 @@ cc_library(
         "//mediapipe/framework/port:ret_check",
         "//mediapipe/framework/port:status",
         "//mediapipe/framework/port:statusor",
+        "//mediapipe/gpu:gpu_buffer",
         "//mediapipe/gpu:gpu_buffer_format",
         "//mediapipe/gpu:gpu_origin_cc_proto",
         "//mediapipe/util:resource_util",
@@ -674,10 +676,17 @@ cc_library(
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
     ] + select({
         "//mediapipe/gpu:disable_gpu": [],
-        "//conditions:default": ["tensor_converter_calculator_gpu_deps"],
+        "//conditions:default": [
+            "tensor_converter_calculator_gpu_deps",
+            "//mediapipe/gpu:gl_base",
+            "//mediapipe/gpu:gl_calculator_helper",
+            "//mediapipe/gpu:gl_simple_shaders",
+            "//mediapipe/gpu:shader_util",
+        ],
     }) + select({
         "//mediapipe:apple": [
             "//third_party/apple_frameworks:MetalKit",
@@ -685,6 +694,35 @@ cc_library(
         "//conditions:default": [],
     }),
     alwayslink = 1,
+)
+
+cc_library(
+    name = "tensor_converter_cpu",
+    srcs = ["tensor_converter_cpu.cc"],
+    hdrs = ["tensor_converter_cpu.h"],
+    deps = [
+        "//mediapipe/framework/formats:image_frame",
+        "//mediapipe/framework/formats:matrix",
+        "//mediapipe/framework/formats:tensor",
+        "//mediapipe/framework/port:ret_check",
+        "//mediapipe/framework/port:status",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+    ],
+)
+
+cc_test(
+    name = "tensor_converter_cpu_test",
+    srcs = ["tensor_converter_cpu_test.cc"],
+    deps = [
+        ":tensor_converter_cpu",
+        "//mediapipe/framework/formats:matrix",
+        "//mediapipe/framework/formats:tensor",
+        "//mediapipe/framework/port:gtest",
+        "//mediapipe/framework/port:gtest_main",
+        "//mediapipe/framework/port:status_matchers",
+        "//mediapipe/util:image_test_utils",
+    ],
 )
 
 cc_library(
@@ -1468,13 +1506,6 @@ cc_library(
     name = "tensors_to_segmentation_utils",
     srcs = ["tensors_to_segmentation_utils.cc"],
     hdrs = ["tensors_to_segmentation_utils.h"],
-    copts = select({
-        "//mediapipe:apple": [
-            "-x objective-c++",
-            "-fobjc-arc",  # enable reference-counting
-        ],
-        "//conditions:default": [],
-    }),
     deps = [
         "//mediapipe/framework:port",
         "//mediapipe/framework/port:ret_check",
@@ -1496,13 +1527,6 @@ cc_test(
 cc_library(
     name = "tensors_to_segmentation_converter",
     hdrs = ["tensors_to_segmentation_converter.h"],
-    copts = select({
-        "//mediapipe:apple": [
-            "-x objective-c++",
-            "-fobjc-arc",  # enable reference-counting
-        ],
-        "//conditions:default": [],
-    }),
     deps = [
         "//mediapipe/framework/formats:image",
         "//mediapipe/framework/formats:tensor",
@@ -1514,13 +1538,6 @@ cc_library(
     name = "tensors_to_segmentation_converter_opencv",
     srcs = ["tensors_to_segmentation_converter_opencv.cc"],
     hdrs = ["tensors_to_segmentation_converter_opencv.h"],
-    copts = select({
-        "//mediapipe:apple": [
-            "-x objective-c++",
-            "-fobjc-arc",  # enable reference-counting
-        ],
-        "//conditions:default": [],
-    }),
     deps = [
         ":tensors_to_segmentation_calculator_cc_proto",
         ":tensors_to_segmentation_converter",
@@ -1538,12 +1555,37 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "tensors_to_segmentation_calculator_test_utils",
+    testonly = 1,
+    srcs = ["tensors_to_segmentation_calculator_test_utils.cc"],
+    hdrs = ["tensors_to_segmentation_calculator_test_utils.h"],
+    deps = [
+        ":tensors_to_segmentation_calculator_cc_proto",
+        "//mediapipe/framework:calculator_cc_proto",
+        "//mediapipe/framework/port:parse_text_proto",
+        "@com_google_absl//absl/log:absl_log",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "tensors_to_segmentation_calculator_test_utils_test",
+    srcs = ["tensors_to_segmentation_calculator_test_utils_test.cc"],
+    deps = [
+        ":tensors_to_segmentation_calculator_cc_proto",
+        ":tensors_to_segmentation_calculator_test_utils",
+        "//mediapipe/framework/port:gtest_main",
+    ],
+)
+
 cc_test(
     name = "tensors_to_segmentation_calculator_test",
     srcs = ["tensors_to_segmentation_calculator_test.cc"],
     deps = [
         ":tensors_to_segmentation_calculator",
         ":tensors_to_segmentation_calculator_cc_proto",
+        ":tensors_to_segmentation_calculator_test_utils",
         "//mediapipe/framework:calculator_framework",
         "//mediapipe/framework:calculator_runner",
         "//mediapipe/framework:packet",
@@ -1554,10 +1596,6 @@ cc_test(
         "//mediapipe/framework/formats:rect_cc_proto",
         "//mediapipe/framework/formats:tensor",
         "//mediapipe/framework/port:gtest_main",
-        "//mediapipe/framework/port:parse_text_proto",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:absl_log",
-        "@com_google_absl//absl/strings",
     ],
 )
 
