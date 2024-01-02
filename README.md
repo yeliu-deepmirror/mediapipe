@@ -45,7 +45,9 @@ apps](https://developers.google.com/mediapipe/solutions/setup_web), and
 bazel build -c opt --copt -DMESA_EGL_NO_X11_HEADERS --copt -DEGL_NO_X11 \
   mediapipe/examples/desktop/hand_tracking:hand_tracking_gpu && \
 GLOG_logtostderr=1 bazel-bin/mediapipe/examples/desktop/hand_tracking/hand_tracking_gpu \
-  --calculator_graph_config_file=mediapipe/graphs/hand_tracking/hand_tracking_desktop_live_gpu.pbtxt
+  --calculator_graph_config_file=mediapipe/graphs/hand_tracking/hand_tracking_desktop_live_gpu.pbtxt \
+  --input_video_path=/mediapipe/data/yvr_1.mp4 \
+  --output_video_path=/mediapipe/data/yvr_1_hand.mp4
 ```
 
 ```bash
