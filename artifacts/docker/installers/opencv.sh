@@ -7,7 +7,7 @@ if [[ ! -z $1 ]]; then
   INSTALL_PREFIX=$1
 fi
 
-OPENCV_VERSION=4.6.0
+OPENCV_VERSION=4.8.1
 
 mkdir -p /tmp/installers
 pushd /tmp/installers

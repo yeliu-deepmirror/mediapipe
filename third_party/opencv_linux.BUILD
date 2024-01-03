@@ -5,7 +5,7 @@ licenses(["notice"])  # BSD license
 
 exports_files(["LICENSE"])
 
-OPENCV_VERSION = "406"
+OPENCV_VERSION = "408"
 
 # The following build rule assumes that OpenCV is installed by
 # 'apt-get install libopencv-core-dev libopencv-highgui-dev \'
